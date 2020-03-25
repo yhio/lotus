@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/minio/blake2b-simd"
 	"io/ioutil"
 	"sync/atomic"
+	"time"
+
+	"github.com/minio/blake2b-simd"
 
 	"github.com/filecoin-project/go-address"
 	commcid "github.com/filecoin-project/go-fil-commcid"
@@ -26,6 +28,7 @@ import (
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/beacon"
 	genesis2 "github.com/filecoin-project/lotus/chain/gen/genesis"
 	"github.com/filecoin-project/lotus/chain/stmgr"
 	"github.com/filecoin-project/lotus/chain/store"
@@ -52,6 +55,8 @@ type ChainGen struct {
 	bs blockstore.Blockstore
 
 	cs *store.ChainStore
+
+	beacon beacon.DrandBeacon
 
 	sm *stmgr.StateManager
 
@@ -213,12 +218,15 @@ func NewGenerator() (*ChainGen, error) {
 
 	miners := []address.Address{maddr1, maddr2}
 
+	beac := beacon.NewMockBeacon(time.Second)
+
 	gen := &ChainGen{
 		bs:           bs,
 		cs:           cs,
 		sm:           sm,
 		msgsPerBlock: msgsPerBlock,
 		genesis:      genb.Genesis,
+		beacon:       beac,
 		w:            w,
 
 		GetMessages: getRandomMessages,
@@ -348,7 +356,13 @@ func (cg *ChainGen) NextTipSetFromMiners(base *types.TipSet, miners []address.Ad
 			}
 
 			if proof != nil {
-				fblk, err := cg.makeBlock(base, m, proof, t, abi.ChainEpoch(round), msgs)
+				nulls := int(round) - int(base.Height()+1)
+				bvals, err := beacon.BeaconEntriesForBlock(context.TODO(), cg.beacon, abi.ChainEpoch(round), nulls)
+				if err != nil {
+					return nil, xerrors.Errorf("failed to get beacon entries: %w", err)
+				}
+
+				fblk, err := cg.makeBlock(base, m, proof, t, bvals, abi.ChainEpoch(round), msgs)
 				if err != nil {
 					return nil, xerrors.Errorf("making a block for next tipset failed: %w", err)
 				}
@@ -370,7 +384,7 @@ func (cg *ChainGen) NextTipSetFromMiners(base *types.TipSet, miners []address.Ad
 	}, nil
 }
 
-func (cg *ChainGen) makeBlock(parents *types.TipSet, m address.Address, eproof *types.EPostProof, ticket *types.Ticket, height abi.ChainEpoch, msgs []*types.SignedMessage) (*types.FullBlock, error) {
+func (cg *ChainGen) makeBlock(parents *types.TipSet, m address.Address, eproof *types.EPostProof, ticket *types.Ticket, bvals []*types.BeaconEntry, height abi.ChainEpoch, msgs []*types.SignedMessage) (*types.FullBlock, error) {
 
 	var ts uint64
 	if cg.Timestamper != nil {
@@ -379,7 +393,7 @@ func (cg *ChainGen) makeBlock(parents *types.TipSet, m address.Address, eproof *
 		ts = parents.MinTimestamp() + uint64((height-parents.Height())*build.BlockDelay)
 	}
 
-	fblk, err := MinerCreateBlock(context.TODO(), cg.sm, cg.w, m, parents, ticket, eproof, msgs, height, ts)
+	fblk, err := MinerCreateBlock(context.TODO(), cg.sm, cg.w, m, parents, ticket, eproof, bvals, msgs, height, ts)
 	if err != nil {
 		return nil, err
 	}

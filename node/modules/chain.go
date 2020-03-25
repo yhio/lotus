@@ -19,6 +19,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/lotus/chain"
+	"github.com/filecoin-project/lotus/chain/beacon"
 	"github.com/filecoin-project/lotus/chain/blocksync"
 	"github.com/filecoin-project/lotus/chain/messagepool"
 	"github.com/filecoin-project/lotus/chain/stmgr"
@@ -132,8 +133,8 @@ func SetGenesis(cs *store.ChainStore, g Genesis) error {
 	return cs.SetGenesis(genesis)
 }
 
-func NewSyncer(lc fx.Lifecycle, sm *stmgr.StateManager, bsync *blocksync.BlockSync, h host.Host) (*chain.Syncer, error) {
-	syncer, err := chain.NewSyncer(sm, bsync, h.ConnManager(), h.ID())
+func NewSyncer(lc fx.Lifecycle, sm *stmgr.StateManager, bsync *blocksync.BlockSync, h host.Host, beacon beacon.DrandBeacon) (*chain.Syncer, error) {
+	syncer, err := chain.NewSyncer(sm, bsync, h.ConnManager(), h.ID(), beacon)
 	if err != nil {
 		return nil, err
 	}

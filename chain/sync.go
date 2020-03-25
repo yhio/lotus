@@ -39,6 +39,7 @@ import (
 
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/build"
+	"github.com/filecoin-project/lotus/chain/beacon"
 	"github.com/filecoin-project/lotus/chain/blocksync"
 	"github.com/filecoin-project/lotus/chain/gen"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -56,6 +57,9 @@ var LocalIncoming = "incoming"
 type Syncer struct {
 	// The interface for accessing and putting tipsets into local storage
 	store *store.ChainStore
+
+	// handle to the random beacon for verification
+	beacon beacon.DrandBeacon
 
 	// the state manager handles making state queries
 	sm *stmgr.StateManager
@@ -80,7 +84,7 @@ type Syncer struct {
 	receiptTracker *blockReceiptTracker
 }
 
-func NewSyncer(sm *stmgr.StateManager, bsync *blocksync.BlockSync, connmgr connmgr.ConnManager, self peer.ID) (*Syncer, error) {
+func NewSyncer(sm *stmgr.StateManager, bsync *blocksync.BlockSync, connmgr connmgr.ConnManager, self peer.ID, beacon beacon.DrandBeacon) (*Syncer, error) {
 	gen, err := sm.ChainStore().GetGenesis()
 	if err != nil {
 		return nil, err
@@ -92,6 +96,7 @@ func NewSyncer(sm *stmgr.StateManager, bsync *blocksync.BlockSync, connmgr connm
 	}
 
 	s := &Syncer{
+		beacon:         beacon,
 		bad:            NewBadBlockCache(),
 		Genesis:        gent,
 		Bsync:          bsync,
@@ -508,6 +513,8 @@ func (syncer *Syncer) ValidateBlock(ctx context.Context, b *types.FullBlock) err
 		return xerrors.Errorf("load parent tipset failed (%s): %w", h.Parents, err)
 	}
 
+	nulls := h.Height - (baseTs.Height() + 1)
+
 	// fast checks first
 	if h.BlockSig == nil {
 		return xerrors.Errorf("block had nil signature")
@@ -618,6 +625,13 @@ func (syncer *Syncer) ValidateBlock(ctx context.Context, b *types.FullBlock) err
 		return nil
 	})
 
+	beaconValuesCheck := async.Err(func() error {
+		if err := beacon.ValidateBlockValues(syncer.beacon, h, int(nulls)); err != nil {
+			return xerrors.Errorf("failed to validate blocks random beacon values: %w", err)
+		}
+		return nil
+	})
+
 	tktsCheck := async.Err(func() error {
 		buf := new(bytes.Buffer)
 		if err := h.Miner.MarshalCBOR(buf); err != nil {
@@ -646,6 +660,7 @@ func (syncer *Syncer) ValidateBlock(ctx context.Context, b *types.FullBlock) err
 		minerCheck,
 		tktsCheck,
 		blockSigCheck,
+		beaconValuesCheck,
 		eproofCheck,
 		winnerCheck,
 		msgsCheck,

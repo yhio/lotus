@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ipfs/go-datastore"
@@ -34,6 +35,7 @@ import (
 	lapi "github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/build"
 	"github.com/filecoin-project/lotus/chain/actors"
+	"github.com/filecoin-project/lotus/chain/beacon"
 	"github.com/filecoin-project/lotus/chain/types"
 	lcli "github.com/filecoin-project/lotus/cli"
 	"github.com/filecoin-project/lotus/genesis"
@@ -413,7 +415,9 @@ func storageMinerInit(ctx context.Context, cctx *cli.Context, api lapi.FullNode,
 			}
 			epp := storage.NewElectionPoStProver(smgr, dtypes.MinerID(mid))
 
-			m := miner.NewMiner(api, epp)
+			beacon := beacon.NewMockBeacon(build.BlockDelay * time.Second)
+
+			m := miner.NewMiner(api, epp, beacon)
 			{
 				if err := m.Register(a); err != nil {
 					return xerrors.Errorf("failed to start up genesis miner: %w", err)
