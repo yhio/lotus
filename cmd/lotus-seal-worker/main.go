@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/filecoin-project/sector-storage/ffiwrapper"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -52,7 +53,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    FlagStorageRepo,
 				EnvVars: []string{"WORKER_PATH"},
-				Value:   "~/.lotusworker", // TODO: Consider XDG_DATA_HOME
+				Value:   "/media/nvme", // TODO: Consider XDG_DATA_HOME
 			},
 			&cli.StringFlag{
 				Name:    "storagerepo",
@@ -92,17 +93,27 @@ var runCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:  "precommit1",
 			Usage: "enable precommit1 (32G sectors: 1 core, 128GiB Memory)",
-			Value: true,
+			Value: false,
 		},
 		&cli.BoolFlag{
 			Name:  "precommit2",
 			Usage: "enable precommit2 (32G sectors: all cores, 96GiB Memory)",
-			Value: true,
+			Value: false,
 		},
 		&cli.BoolFlag{
-			Name:  "commit",
-			Usage: "enable commit (32G sectors: all cores or GPUs, 128GiB Memory + 64GiB swap)",
-			Value: true,
+			Name:  "commit1",
+			Usage: "enable commit1",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "commit2",
+			Usage: "enable commit2 (32G sectors: all cores or GPUs, 128GiB Memory + 64GiB swap)",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "finalize",
+			Usage: "enable finalize",
+			Value: false,
 		},
 	},
 	Action: func(cctx *cli.Context) error {
@@ -159,13 +170,21 @@ var runCmd = &cli.Command{
 		if cctx.Bool("precommit2") {
 			taskTypes = append(taskTypes, sealtasks.TTPreCommit2)
 		}
-		if cctx.Bool("commit") {
+		if cctx.Bool("commit1") {
+			taskTypes = append(taskTypes, sealtasks.TTCommit1)
+		}
+		if cctx.Bool("commit2") {
 			taskTypes = append(taskTypes, sealtasks.TTCommit2)
+		}
+		if cctx.Bool("finalize") {
+			taskTypes = append(taskTypes, sealtasks.TTFinalize)
 		}
 
 		if len(taskTypes) == 0 {
 			return xerrors.Errorf("no task types specified")
 		}
+
+		log.Infof("support taskTypes: %v", taskTypes)
 
 		// Open repo
 
@@ -209,6 +228,12 @@ var runCmd = &cli.Command{
 				localPaths = append(localPaths, stores.LocalPath{
 					Path: lr.Path(),
 				})
+				//finalize clean cache and move sector to long storage
+				if cctx.Bool("finalize") {
+					localPaths = append(localPaths, stores.LocalPath{
+						Path: "/media/storage",
+					})
+				}
 			}
 
 			if err := lr.SetStorage(func(sc *stores.StorageConfig) {
