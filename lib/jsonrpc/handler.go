@@ -76,7 +76,7 @@ func (h handlers) register(namespace string, r interface{}) {
 			hasCtx = 1
 		}
 
-		ins := funcType.NumIn() - 1 - hasCtx
+		ins := funcType.NumIn() - 1 - hasCtx //why -1 ?
 		recvs := make([]reflect.Type, ins)
 		for i := 0; i < ins; i++ {
 			recvs[i] = method.Type.In(i + 1 + hasCtx)

@@ -129,9 +129,9 @@ func NewMergeClient(addr string, namespace string, outs []interface{}, requestHe
 		}
 
 		val := reflect.ValueOf(handler)
-
+		//typ is a struct with function fields
 		for i := 0; i < typ.NumField(); i++ {
-			fn, err := c.makeRpcFunc(typ.Field(i))
+			fn, err := c.makeRpcFunc(typ.Field(i)) //typ.Field is function
 			if err != nil {
 				return nil, err
 			}
