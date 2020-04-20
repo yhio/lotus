@@ -898,6 +898,8 @@ github.com/x-cray/logrus-prefixed-formatter v0.5.2/go.mod h1:2duySbKsL6M18s5GU7V
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/yaohcn/sector-storage v0.0.0-20200416063047-1f58d9b721ad h1:x3+6EgF0uZsgvoBvjjRZIsDmJDB2Y+Iwlro6A+uYk6g=
 github.com/yaohcn/sector-storage v0.0.0-20200416063047-1f58d9b721ad/go.mod h1:/yueJueMh0Yc+0G1adS0lhnedcSnjY86EjKsA20+DVY=
+github.com/yaohcn/sector-storage v0.0.0-20200420074609-4fb916d64d60 h1:6+OjsVS/F9+qaUIZ/DGNSxRAMx7N8T97Aq0G2Qetkbc=
+github.com/yaohcn/sector-storage v0.0.0-20200420074609-4fb916d64d60/go.mod h1:/yueJueMh0Yc+0G1adS0lhnedcSnjY86EjKsA20+DVY=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.dedis.ch/fixbuf v1.0.3 h1:hGcV9Cd/znUxlusJ64eAlExS+5cJDIyTyEG+otu5wQs=
 go.dedis.ch/fixbuf v1.0.3/go.mod h1:yzJMt34Wa5xD37V5RTdmp38cz3QhMagdGoem9anUalw=

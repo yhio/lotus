@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/filecoin-project/specs-actors/actors/abi"
 
 	"github.com/filecoin-project/specs-storage/storage"
 
@@ -20,4 +21,6 @@ type WorkerApi interface {
 	Info(context.Context) (sectorstorage.WorkerInfo, error)
 
 	storage.Sealer
+
+	AddPiece2(ctx context.Context, sector abi.SectorID, pieceSizes []abi.UnpaddedPieceSize, newPieceSize abi.UnpaddedPieceSize) (abi.PieceInfo, error)
 }
