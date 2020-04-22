@@ -114,6 +114,11 @@ var runCmd = &cli.Command{
 			Usage: "enable finalize",
 			Value: false,
 		},
+		&cli.BoolFlag{
+			Name:  "addpiece",
+			Usage: "enable addpiece",
+			Value: false,
+		},
 	},
 	Action: func(cctx *cli.Context) error {
 		if !cctx.Bool("enable-gpu-proving") {
@@ -177,6 +182,9 @@ var runCmd = &cli.Command{
 		}
 		if cctx.Bool("finalize") {
 			taskTypes = append(taskTypes, sealtasks.TTFinalize)
+		}
+		if cctx.Bool("addpiece") {
+			taskTypes = append(taskTypes, sealtasks.TTAddPiece)
 		}
 
 		if len(taskTypes) == 0 {
