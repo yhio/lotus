@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/filecoin-project/sector-storage/ffiwrapper"
 	"io/ioutil"
 	"net"
 	"net/http"
