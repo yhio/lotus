@@ -160,7 +160,7 @@ var runCmd = &cli.Command{
 			return err
 		}
 
-		if cctx.Bool("commit") {
+		if cctx.Bool("commit2") {
 			if err := paramfetch.GetParams(build.ParametersJson(), uint64(ssize)); err != nil {
 				return xerrors.Errorf("get params: %w", err)
 			}
